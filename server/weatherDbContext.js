@@ -32,6 +32,7 @@ sequelize.authenticate()
 // Initialize the `db` object to hold the models and the Sequelize instance
 const db = {};
 
+
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 

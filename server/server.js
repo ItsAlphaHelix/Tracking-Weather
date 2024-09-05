@@ -1,6 +1,6 @@
-const express = require('express')
-const cors = require('cors')
-
+const express = require('express');
+const cors = require('cors');
+//const MyHub = require('./myHub.js');
 var corsOptions = { 
     origin: 'http://127.0.0.1:5501/'
 }
@@ -19,15 +19,11 @@ app.use(express.urlencoded({ extended: true }))
 app.get('/', (req, res) => {
     res.json({message: 'hello velikolepni'})
 });
-// routers
 
-// app.get('/getAll', (request, response) => {
-//     console.log("hohoho")
-// })
+// routers
 
 const router = require('./routes/routes.js')
 app.use(router)
-
 
 //port
 

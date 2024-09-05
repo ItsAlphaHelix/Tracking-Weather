@@ -6,7 +6,7 @@ const config = {
     password: process.env.password,
     database: "TrackingWeather",
     host: "http://localhost:8080/",
-    dialect: "mssql"
+    dialect: "mssql",
   },
   test: {
     username: "root",

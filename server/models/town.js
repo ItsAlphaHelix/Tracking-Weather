@@ -10,7 +10,6 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
     }
   }
   Town.init({
@@ -27,6 +26,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
   }, {
+    timestamps: true,
     sequelize,
     modelName: 'Town',
   });
