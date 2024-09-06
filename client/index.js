@@ -24,12 +24,12 @@ document.querySelector(".find-location").addEventListener('submit', async (event
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    let currentDate = new Date();
     if ("geolocation" in navigator) {
        navigator.geolocation.getCurrentPosition(async function (position) {
             var lat = position.coords.latitude;
             var lon = position.coords.longitude;
 
+            
             try {
                 let response = await fetch('http://localhost:8080/postCoordinates', {
                     method: 'POST',
@@ -38,13 +38,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     body: JSON.stringify({ lat, lon })
                 });
-
+                
                 let data = await response.json();
-
-                let myWeather = await getMyWeather(data, lat, lon);
-
-                renderCurrentDayWeather(myWeather, data.townName);
-
+                
+                 var updatedData = await updateWeatherData(data, lat, lon);
+                 let obj = { updatedData, data};
+                 await renderCurrentDayWeather(obj);
 
             } catch (error) {
                 console.error('There has been a problem with your fetch operation:', error);
@@ -58,33 +57,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-async function getMyWeather(data, lat, lon) {
-    const updatedAt = data.currentDayWeather[0].updatedAt;
-    var updatedAtDate = new Date(updatedAt);
+async function renderCurrentDayWeather(obj) {
+    let result;
+   if (obj.updatedData == undefined) {
+       result = await getWeather(obj.data);
+   }else { 
+       result = await getWeather(obj.updatedData);
+   }
 
-    const currentDate = new Date();
+    const forecastElement = document.querySelector('.today'); // Or the appropriate selector for your container
 
-    const differenceInMs = currentDate - updatedAtDate;
+    forecastElement.innerHTML = `
+    <div class="today forecast">
+        <div class="forecast-header">
+                            <div class="day">${result.NameOfDay}</div>
+                            <div class="date">${result.Day} ${result.NameOfMonth}</div>
+                        </div>
+                        <div class="forecast-content">
+                            <div class="location">${result.TownName}</div>
+                            <div class="degree">
+                                <div class="num">${parseFloat(result.Temp).toFixed(0)}<sup>o</sup>C</div>
+                                <div class="forecast-icon"> 
+                                    <img src="https://openweathermap.org/img/wn/${result.WeatherIcon}@2x.png" alt="" width=140 >
+                                </div>
+                            </div>
+                            <span><img src="images/icon-umberella.png" alt="">20%</span>
+                            <span><img src="images/icon-wind.png" alt="">${result.WindSpeed}km/h</span>
+                            <span><img src="images/icon-compass.png" alt="">East</span>
+                        </div>
+`;
 
-
-    const oneHourInMs = 60 * 60 * 1000;
-     //if (differenceInMs >= oneHourInMs) {
-        // try {
-        //     await fetch('http://localhost:8080/updateCurrentWeatherInDatabase', {
-        //         method: 'POST',
-        //         headers: {
-        //             'Content-Type': 'application/json'
-        //         },
-        //         body: JSON.stringify({ lat, lon, townId: data.townId })
-        //     });
-
-        // } catch (error) {
-        //     console.error('There has been a problem with your fetch operation:', error);
-        // }
- //} 
-
-    let myWeather = {};
-
+}
+async function getWeather(data) { 
+     let myWeather = {};
+    // let records;
+    // let townName;
+    // if (!data.currentDayWeather) {
+    //     records = data.updatedData;
+    //     townName = data.townName;
+    // }else {
+    //     records = data.currentDayWeather;
+    //     townName = data.TownName;
+    // }
 
     const currentHour = new Date().getHours();
 
@@ -95,7 +109,7 @@ async function getMyWeather(data, lat, lon) {
         const nameOfDay = forecastDate.toLocaleDateString('bg-BG', { weekday: 'long' }); //en-US
         const nameOfMonth = forecastDate.toLocaleDateString('bg-BG', { month: 'long' });
         const day = forecastDate.getDate();
-       
+
         if (currentDayWeatherHour > currentHour - 3) {
             myWeather.Temp = weather.Temp;
             myWeather.MaxTemp = weather.MaxTemp;
@@ -105,32 +119,39 @@ async function getMyWeather(data, lat, lon) {
             myWeather.NameOfDay = nameOfDay;
             myWeather.NameOfMonth = nameOfMonth;
             myWeather.Day = day;
+            myWeather.TownName = data.townName
             break;
         }
     }
     return myWeather;
 }
 
-function renderCurrentDayWeather(myWeather, townName) {
-    const forecastElement = document.querySelector('.today'); // Or the appropriate selector for your container
+async function updateWeatherData(data, lat, lon) {
+    const updatedAt = data.currentDayWeather[0].updatedAt;
+    var updatedAtDate = new Date(updatedAt);
 
-    forecastElement.innerHTML = `
-    <div class="today forecast">
-        <div class="forecast-header">
-                            <div class="day">${myWeather.NameOfDay}</div>
-                            <div class="date">${myWeather.Day} ${myWeather.NameOfMonth}</div>
-                        </div>
-                        <div class="forecast-content">
-                            <div class="location">${townName}</div>
-                            <div class="degree">
-                                <div class="num">${parseFloat(myWeather.Temp).toFixed(0)}<sup>o</sup>C</div>
-                                <div class="forecast-icon"> 
-                                    <img src="https://openweathermap.org/img/wn/${myWeather.WeatherIcon}@2x.png" alt="" width=140 >
-                                </div>
-                            </div>
-                            <span><img src="images/icon-umberella.png" alt="">20%</span>
-                            <span><img src="images/icon-wind.png" alt="">${myWeather.WindSpeed}km/h</span>
-                            <span><img src="images/icon-compass.png" alt="">East</span>
-                        </div>
-`;
+    const currentDate = new Date();
+
+    const differenceInMs = currentDate - updatedAtDate;
+
+
+    const oneHourInMs = 60 * 60 * 1000;
+
+    if (differenceInMs >= oneHourInMs) {
+        try {
+               let response = await fetch('http://localhost:8080/updateCurrentWeatherInDatabase', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ lat, lon, townId: data.townId })
+            });
+
+             return await response.json();
+
+        } catch (error) {
+            console.error('There has been a problem with your fetch operation:', error);
+        }
+   }
+
 }

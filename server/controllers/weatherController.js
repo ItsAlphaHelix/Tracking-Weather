@@ -84,6 +84,7 @@ async function getMyWeatherFromDatabase(lat, lon) {
         townId: town.id
     };
 }
+
 const getTownCoordinatesByTownName = async (request, response) => {
 
     const { townName } = request.body;
@@ -148,34 +149,65 @@ const fetchWeatherData = async (lat, lon) => {
     }
 };
 
-const processWeatherData = async (data, townId) => {
+const processWeatherInsertData = async (data, townId) => {
     for (const item of data.list) {
         const { dt_txt, main, weather, wind } = item;
 
-        await TownWeatherInfo.upsert({
+        await TownWeatherInfo.create({
             TownId: townId,
-            Temp: main.temp,
-            MaxTemp: main.temp_max,
-            MinTemp: main.temp_min,
+            Temp: Math.round(main.temp),
+            MaxTemp: Math.round(main.temp_max),
+            MinTemp: Math.round(main.temp_min),
             WeatherIcon: weather[0].icon,
             WindSpeed: wind.speed,
             ForecastDate: dt_txt,
-        });
+        },
+        );
+    }
+};
+
+
+const processWeatherUpdateData = async (data, townId) => {
+    const currentIsoDate = new Date().toISOString().split('T')[0];
+    for (const item of data.list) {
+        const { dt_txt, main, weather, wind } = item;
+
+        await TownWeatherInfo.update({
+            Temp: Math.round(main.temp_max),
+            MaxTemp: Math.round(main.temp_max),
+            MinTemp: Math.round(main.temp_min),
+            WeatherIcon: weather[0].icon,
+            WindSpeed: wind.speed,
+            ForecastDate: dt_txt,
+            
+        },
+        {
+            where: {
+                Temp: Math.round(main.temp),
+                MaxTemp: Math.round(main.temp_max),
+                MinTemp: Math.round(main.temp_min),
+                ForecastDate: dt_txt,
+                WeatherIcon: weather[0].icon,
+                WindSpeed: wind.speed,
+                ForecastDate: { [Op.like]: `%${currentIsoDate}%` }
+            }
+        }
+    );
     }
 };
 
 const fillDatabaseWithWeatherData = async (town) => {
     try {
         const data = await fetchWeatherData(town.Lat, town.Lon);
-        await processWeatherData(data, town.id);
+        await processWeatherInsertData(data, town.id);
     } catch (error) {
         console.error('Error filling database with weather data:', error);
     }
 };
 
 const updateCurrentWeatherInDatabase = async (request, response) => {
+    debugger
     const { lat, lon, townId } = request.body;
-
     try {
         const data = await fetchWeatherData(lat, lon);
         const townWeatherInfo = await TownWeatherInfo.findAll({ where: { TownId: townId } });
@@ -187,9 +219,8 @@ const updateCurrentWeatherInDatabase = async (request, response) => {
                 await row.destroy();
             }
         }
-
-        await processWeatherData(data, townId);
-
+        
+        await processWeatherUpdateData(data, townId);   
         let weatherData = await getMyWeatherFromDatabase(lat, lon);
         return response.json(weatherData);
         
@@ -198,96 +229,6 @@ const updateCurrentWeatherInDatabase = async (request, response) => {
         response.status(500).send('Error updating weather data');
     }
 };
-
-// async function fillDatabaseWithWeatherDate(town) {
-
-//     const url = `http://api.openweathermap.org/data/2.5/forecast?lat=${town.Lat}&lon=${town.Lon}&units=metric&appid=${apiKey}`;
-
-//     try {
-//         const response = await fetch(url, {
-//             method: 'GET',
-//             headers: {
-//                 'Content-Type': 'application/json'
-//             }
-//         });
-
-//         if (!response.ok) {
-//             throw new Error('Network response was not ok');
-//         }
-
-//         const data = await response.json();
-
-
-//         for (const item of data.list) {
-//             const { dt_txt, main, weather, wind } = item;
-
-//             await TownWeatherInfo.create({
-//                 TownId: town.id,
-//                 Temp: main.temp,
-//                 MaxTemp: main.temp_max,
-//                 MinTemp: main.temp_min,
-//                 WeatherIcon: weather[0].icon,
-//                 WindSpeed: wind.speed,
-//                 ForecastDate: dt_txt,
-//             });
-//         }
-//     } catch (error) {
-//         console.error('There has been a problem with your fetch operation:', error);
-//     }
-// }
-
-// const updateCurrentWeatherInDatabase = async (request, response)  => {
-//     const {lat, lon, townId } = request.body;
-
-//     const townWeatherInfo = await TownWeatherInfo.findAll({where: {TownId: townId}})
-
-//     const url = `http://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
-
-//     try {
-//         const response = await fetch(url, {
-//             method: 'GET',
-//             headers: {
-//                 'Content-Type': 'application/json'
-//             }
-//         });
-
-//         if (!response.ok) {
-//             throw new Error('Network response was not ok');
-//         }
-//         const data = await response.json();
-
-//         const rowForDelete = await townWeatherInfo.find(x => x.TownId == townId);
-//         const dt_txt = data.list.find(x => x.dt_txt == rowForDelete.ForeCastDate);
-        
-//         if (dt_txt == undefined){
-//            await rowForDelete.destroy();
-//         }
-//         for (const item of data.list) {
-//             const { dt_txt, main, weather, wind } = item;
-
-//             await TownWeatherInfo.update({
-//                 Temp: main.temp,
-//                 MaxTemp: main.temp_max,
-//                 MinTemp: main.temp_min,
-//                 WeatherIcon: weather[0].icon,
-//                 WindSpeed: wind.speed,
-//                 ForecastDate: dt_txt, 
-//             },
-//             {
-//                 where: { Hour: hour, Day: day, ForecastDate: dt_txt }
-//             }
-//         );
-// }
-
-//     } catch (error) {
-//         console.error('There has been a problem with your fetch operation:', error);
-//     }
-// }
-
-
-async function getData(lat, lon, townId) {
-
-}
 
 module.exports = {
     getTownCoordinatesByTownName,

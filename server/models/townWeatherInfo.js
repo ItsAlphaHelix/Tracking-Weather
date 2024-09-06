@@ -32,12 +32,6 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: true,
     sequelize,
     modelName: 'TownWeatherInfo',
-    indexes: [
-      {
-        unique: true,
-        fields: ['TownId', 'ForecastDate']
-      }
-    ]
   });
   return townWeatherInfo;
 };
