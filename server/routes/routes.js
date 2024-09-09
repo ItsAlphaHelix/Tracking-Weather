@@ -7,5 +7,5 @@ const router = require('express').Router()
 
 router.post('/getTownCoordinatesByTownName', weatherController.getTownCoordinatesByTownName);
 router.post('/postCoordinates', weatherController.postCoordinates);
-router.post('/updateCurrentWeatherInDatabase', weatherController.updateCurrentWeatherInDatabase);
+router.post('/updateWeatherInDatabase', weatherController.updateWeatherInDatabase);
 module.exports = router

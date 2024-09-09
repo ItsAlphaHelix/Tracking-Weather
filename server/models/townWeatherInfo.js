@@ -22,12 +22,14 @@ module.exports = (sequelize, DataTypes) => {
         key: 'id'
       }
     },
-    Temp: DataTypes.STRING,
-    MaxTemp: DataTypes.STRING,
-    MinTemp: DataTypes.STRING,
+    Temp: DataTypes.INTEGER,
+    MinTemp: DataTypes.INTEGER,
     WeatherIcon: DataTypes.STRING,
     WindSpeed: DataTypes.STRING,
-    ForecastDate: DataTypes.STRING
+    DayName: DataTypes.STRING,
+    DayNumber: DataTypes.INTEGER,
+    MonthName: DataTypes.STRING,
+    Humidity: DataTypes.INTEGER
   }, {
     timestamps: true,
     sequelize,

@@ -18,13 +18,10 @@ module.exports = {
         }
       },
       Temp: {
-        type: Sequelize.STRING
-      },
-      MaxTemp: {
-        type: Sequelize.STRING
+        type: Sequelize.INTEGER
       },
       MinTemp: {
-        type: Sequelize.STRING
+        type: Sequelize.INTEGER
       },
       WeatherIcon: {
         type: Sequelize.STRING
@@ -32,8 +29,17 @@ module.exports = {
       WindSpeed: {
         type: Sequelize.STRING
       },
-      ForecastDate: {
+      DayName:{
         type: Sequelize.STRING
+      },
+      DayNumber: {
+        type: Sequelize.INTEGER
+      },
+      MonthName: {
+        type: Sequelize.STRING
+      },
+      Humidity: {
+        type: Sequelize.INTEGER
       },
       createdAt: {
         allowNull: false,

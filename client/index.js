@@ -39,11 +39,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({ lat, lon })
                 });
                 
-                let data = await response.json();
-                
-                 var updatedData = await updateWeatherData(data, lat, lon);
-                 let obj = { updatedData, data};
-                 await renderCurrentDayWeather(obj);
+                let currentData = await response.json();
+                let updatedData = await updateWeatherData(currentData, lat, lon);
+                await renderData(currentData, updatedData)
 
             } catch (error) {
                 console.error('There has been a problem with your fetch operation:', error);
@@ -57,77 +55,62 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-async function renderCurrentDayWeather(obj) {
-    let result;
-   if (obj.updatedData == undefined) {
-       result = await getWeather(obj.data);
-   }else { 
-       result = await getWeather(obj.updatedData);
-   }
+async function renderData(data, updatedData) {
+    let weatherData; 
 
-    const forecastElement = document.querySelector('.today'); // Or the appropriate selector for your container
-
-    forecastElement.innerHTML = `
+    if (updatedData == undefined) {
+        weatherData = data.weatherData;
+    }else { 
+        weatherData = updatedData.weatherData;
+    }
+    
+    const townName = data.townName;    
+    const forecastContainer = document.querySelector('.forecast-container');
+    
+    const currentWeatherHTML = `
     <div class="today forecast">
         <div class="forecast-header">
-                            <div class="day">${result.NameOfDay}</div>
-                            <div class="date">${result.Day} ${result.NameOfMonth}</div>
-                        </div>
-                        <div class="forecast-content">
-                            <div class="location">${result.TownName}</div>
-                            <div class="degree">
-                                <div class="num">${parseFloat(result.Temp).toFixed(0)}<sup>o</sup>C</div>
-                                <div class="forecast-icon"> 
-                                    <img src="https://openweathermap.org/img/wn/${result.WeatherIcon}@2x.png" alt="" width=140 >
-                                </div>
-                            </div>
-                            <span><img src="images/icon-umberella.png" alt="">20%</span>
-                            <span><img src="images/icon-wind.png" alt="">${result.WindSpeed}km/h</span>
-                            <span><img src="images/icon-compass.png" alt="">East</span>
-                        </div>
+            <div class="day">${weatherData[0].DayName}</div>
+            <div class="date">${weatherData[0].DayNumber} ${weatherData[0].MonthName}</div>
+        </div>
+        <div class="forecast-content">
+            <div class="location">${townName}</div>
+            <div class="degree">
+                <div class="num">${weatherData[0].Temp}<sup>o</sup>C</div>
+                <div class="forecast-icon">
+                    <img src="https://openweathermap.org/img/wn/${weatherData[0].WeatherIcon}@2x.png" alt="" width="140">
+                </div>
+            </div>
+            <span><img src="images/icon-umberella.png" alt="">20%</span>
+            <span><img src="images/icon-wind.png" alt="">${weatherData[0].WindSpeed} km/h</span>
+            <span><img src="images/icon-compass.png" alt="">East</span>
+        </div>
+    </div>
 `;
+    
+    const forecastHTML = weatherData.slice(1).map(data => {
+        return `
+        <div class="forecast">
+            <div class="forecast-header">
+                <div class="day">${data.DayName}</div>
+            </div> 
+            <div class="forecast-content">
+                <div class="forecast-icon">
+                    <img src="https://openweathermap.org/img/wn/${data.WeatherIcon}@2x.png" alt="" width="90">
+                </div>
+                <div class="degree">${data.Temp}<sup>o</sup>C</div>
+                <small>${data.MinTemp}<sup>o</sup></small>
+            </div>
+        </div>
+    `;
+    }).join(''); 
 
-}
-async function getWeather(data) { 
-     let myWeather = {};
-    // let records;
-    // let townName;
-    // if (!data.currentDayWeather) {
-    //     records = data.updatedData;
-    //     townName = data.townName;
-    // }else {
-    //     records = data.currentDayWeather;
-    //     townName = data.TownName;
-    // }
+    forecastContainer.innerHTML = currentWeatherHTML + forecastHTML;
 
-    const currentHour = new Date().getHours();
-
-    for (let i = 0; i < data.currentDayWeather.length; i++) {
-        let weather = data.currentDayWeather[i];
-        const forecastDate = new Date(weather.ForecastDate);
-        const currentDayWeatherHour = forecastDate.getHours();
-        const nameOfDay = forecastDate.toLocaleDateString('bg-BG', { weekday: 'long' }); //en-US
-        const nameOfMonth = forecastDate.toLocaleDateString('bg-BG', { month: 'long' });
-        const day = forecastDate.getDate();
-
-        if (currentDayWeatherHour > currentHour - 3) {
-            myWeather.Temp = weather.Temp;
-            myWeather.MaxTemp = weather.MaxTemp;
-            myWeather.MinTemp = weather.MinTemp;
-            myWeather.WeatherIcon = weather.WeatherIcon;
-            myWeather.WindSpeed = weather.WindSpeed;
-            myWeather.NameOfDay = nameOfDay;
-            myWeather.NameOfMonth = nameOfMonth;
-            myWeather.Day = day;
-            myWeather.TownName = data.townName
-            break;
-        }
-    }
-    return myWeather;
 }
 
 async function updateWeatherData(data, lat, lon) {
-    const updatedAt = data.currentDayWeather[0].updatedAt;
+    const updatedAt = data.weatherData[0].updatedAt;
     var updatedAtDate = new Date(updatedAt);
 
     const currentDate = new Date();
@@ -139,12 +122,12 @@ async function updateWeatherData(data, lat, lon) {
 
     if (differenceInMs >= oneHourInMs) {
         try {
-               let response = await fetch('http://localhost:8080/updateCurrentWeatherInDatabase', {
+               let response = await fetch('http://localhost:8080/updateWeatherInDatabase', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ lat, lon, townId: data.townId })
+                   body: JSON.stringify({ lat, lon })
             });
 
              return await response.json();
