@@ -10,13 +10,18 @@ document.querySelector(".find-location").addEventListener('submit', async (event
         const townName = element.value.trim();
 
         try {
-            await fetch('http://localhost:8080/getTownCoordinatesByTownName', {
+            let response = await fetch('http://localhost:8080/postTownName', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ townName })
+                body: JSON.stringify({ townName })                
             });
+
+            let currentData = await response.json();
+            let updatedData; //= await updateWeatherData(currentData, lat, lon);
+            await renderData(currentData, updatedData)
+
         } catch (error) {
             console.error('There has been a problem with your fetch operation:', error);
             return null; // Return null or handle the error as needed

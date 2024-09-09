@@ -69,8 +69,7 @@ const postCoordinates = async (request, re) => {
 
 
 //router function
-const getTownCoordinatesByTownName = async (request, response) => {
-
+const postTownName = async (request, re) => {
     const { townName } = request.body;
 
     let town = await Town.findOne({ where: { name: townName } });
@@ -98,6 +97,8 @@ const getTownCoordinatesByTownName = async (request, response) => {
 
             town = await Town.create({ Name: name, Lat: lat, Lon: lon });
             await fillDatabaseWithWeatherData(town);
+            let weatherData = await getMyWeatherFromDatabase(town)
+            return re.json(weatherData);
 
             return data; // Return the response data
         } catch (error) {
@@ -106,7 +107,9 @@ const getTownCoordinatesByTownName = async (request, response) => {
         }
     }
     else {
-        //await updateCurrentWeatherInDatabase(town);
+        debugger
+        let weatherData = await getMyWeatherFromDatabase(town);
+        return re.json(weatherData);
     }
 }
 
@@ -263,7 +266,6 @@ const processWeatherUpdateData = async (weeklyWeatherData, currentWeatherData, t
     }
 );
     weeklyWeatherData = getWeeklyObjectsByHighestAndLowestTemp(weeklyWeatherData);
-    debugger
     for (const object of weeklyWeatherData) {
         const { dt_txt, main, weather } = object;
         currentWeatherDate = new Date(dt_txt);
@@ -329,7 +331,7 @@ function getWeeklyObjectsByHighestAndLowestTemp(weeklyWeatherData) {
 }
 
 module.exports = {
-    getTownCoordinatesByTownName,
+    postTownName,
     postCoordinates,
     updateWeatherInDatabase
 }
