@@ -19,46 +19,32 @@ document.querySelector(".find-location").addEventListener('submit', async (event
             });
 
             let currentData = await response.json();
-            let updatedData; //= await updateWeatherData(currentData, lat, lon);
+            let updatedData = await updateWeatherData(currentData);
             await renderData(currentData, updatedData)
 
         } catch (error) {
             console.error('There has been a problem with your fetch operation:', error);
-            return null; // Return null or handle the error as needed
+            return null; 
         }
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    if ("geolocation" in navigator) {
-       navigator.geolocation.getCurrentPosition(async function (position) {
-            var lat = position.coords.latitude;
-            var lon = position.coords.longitude;
-
-            
-            try {
-                let response = await fetch('http://localhost:8080/postCoordinates', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ lat, lon })
-                });
-                
-                let currentData = await response.json();
-                let updatedData = await updateWeatherData(currentData, lat, lon);
-                await renderData(currentData, updatedData)
-
-            } catch (error) {
-                console.error('There has been a problem with your fetch operation:', error);
+document.addEventListener('DOMContentLoaded', async function () {
+    try {
+        let response = await fetch('http://localhost:8080/getWeatherData', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
             }
-
-        }, function (error) {
-            console.error("Error occurred. Error code: " + error.code);
         });
-    } else {
-        console.log("Geolocation is not supported by this browser.");
+
+        let currentData = await response.json();
+        let updatedData = await updateWeatherData(currentData);
+        await renderData(currentData, updatedData);
+
+    } catch (error) {
+        console.error('There has been a problem with your fetch operation:', error);
     }
-});
+}); 
 
 async function renderData(data, updatedData) {
     let weatherData; 
@@ -114,7 +100,7 @@ async function renderData(data, updatedData) {
 
 }
 
-async function updateWeatherData(data, lat, lon) {
+async function updateWeatherData(data) {
     const updatedAt = data.weatherData[0].updatedAt;
     var updatedAtDate = new Date(updatedAt);
 
@@ -132,7 +118,7 @@ async function updateWeatherData(data, lat, lon) {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                   body: JSON.stringify({ lat, lon })
+                   body: JSON.stringify({ lat: data.lat, lon: data.lon })
             });
 
              return await response.json();

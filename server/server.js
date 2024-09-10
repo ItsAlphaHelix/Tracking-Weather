@@ -7,7 +7,6 @@ var corsOptions = {
 
 const app = express()
 
-
 // middleware
 app.use(cors());
 
@@ -16,8 +15,14 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 
-app.get('/', (req, res) => {
-    res.json({message: 'hello velikolepni'})
+app.get('/ip-info', async (req, res) => {
+    try {
+        const response = await fetch(`https://ipinfo.io/json?token=${process.env.IpinfoKey}`);
+        const data = await response.json();
+        res.json(data); // Send the data back to the client
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching IP data' });
+    }
 });
 
 // routers

@@ -6,6 +6,6 @@ const weatherController = require('../controllers/weatherController.js')
 const router = require('express').Router()
 
 router.post('/postTownName', weatherController.postTownName);
-router.post('/postCoordinates', weatherController.postCoordinates);
+router.get('/getWeatherData', weatherController.getWeatherData);
 router.post('/updateWeatherInDatabase', weatherController.updateWeatherInDatabase);
 module.exports = router

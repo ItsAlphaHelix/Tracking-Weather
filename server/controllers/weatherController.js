@@ -5,17 +5,24 @@ const db = require('../models');
 
 const Town = db.Town;
 const TownWeatherInfo = db.TownWeatherInfo;
-const apiKey = process.env.WeatherApiKey;
+const weatherKey = process.env.WeatherApiKey;
 
 //router function
-const postCoordinates = async (request, re) => {
-    const { lat, lon } = request.body;
-    let town = await getTownByCoordinates(lat, lon);
+const getWeatherData = async (request, re) => {
+    let ipinfoData = await getIpinfoData();
+    const { city } = ipinfoData;
+
+    let town = await Town.findOne({ where: { Name: city } });
+
+    if (town) {
+        town = await getTownByCoordinates(town.Lat, town.Lon);
+    }
 
     if (town == null) {
-        const reverseUrl = `http://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${apiKey}`
+        const directUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${city}&appid=${weatherKey}`;
+
         try {
-            const response = await fetch(reverseUrl, {
+            const response = await fetch(directUrl, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -27,42 +34,20 @@ const postCoordinates = async (request, re) => {
             }
 
             const data = await response.json();
-            const townName = data[0].local_names.bg;
+            const { name, lat, lon } = data[0];
 
-            const directUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${townName}&appid=${apiKey}`;
+            town = await Town.create({ Name: name, Lat: lat, Lon: lon });
+            await fillDatabaseWithWeatherData(town);
 
-            try {
-                const response = await fetch(directUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                await response.json();
-                
-                town = await Town.create({ Name: townName, Lat: lat, Lon: lon });
-                await fillDatabaseWithWeatherData(town);
-                
-                let weatherData = await getMyWeatherFromDatabase(town)
-                return re.json(weatherData);
-            } catch (error) {
-                console.error('There has been a problem with your fetch operation:', error);
-                return null; 
-            }
-
-
+            let weatherData = await getWeatherFromDatabase(town)
+            return re.json(weatherData);
         } catch (error) {
             console.error('There has been a problem with your fetch operation:', error);
-            return null; // Return null or handle the error as needed
+            return null;
         }
      }else {
         
-        let weatherData = await getMyWeatherFromDatabase(town);
+        let weatherData = await getWeatherFromDatabase(town);
         return re.json(weatherData);
     }
 };
@@ -73,12 +58,13 @@ const postTownName = async (request, re) => {
     const { townName } = request.body;
 
     let town = await Town.findOne({ where: { name: townName } });
-
+    if (town) {
+        town = await getTownByCoordinates(town.Lat, town.Lon);
+    }
     if (town == null) {
 
         //encodeURIComponent
-        const url = `http://api.openweathermap.org/geo/1.0/direct?q=${townName}&appid=${apiKey}`;
-
+        const url = `http://api.openweathermap.org/geo/1.0/direct?q=${townName}&appid=${weatherKey}`;
 
         try {
             const response = await fetch(url, {
@@ -97,18 +83,15 @@ const postTownName = async (request, re) => {
 
             town = await Town.create({ Name: name, Lat: lat, Lon: lon });
             await fillDatabaseWithWeatherData(town);
-            let weatherData = await getMyWeatherFromDatabase(town)
+            let weatherData = await getWeatherFromDatabase(town)
             return re.json(weatherData);
-
-            return data; // Return the response data
         } catch (error) {
             console.error('There has been a problem with your fetch operation:', error);
             return null; // Return null or handle the error as needed
         }
     }
     else {
-        debugger
-        let weatherData = await getMyWeatherFromDatabase(town);
+        let weatherData = await getWeatherFromDatabase(town);
         return re.json(weatherData);
     }
 }
@@ -122,7 +105,7 @@ const updateWeatherInDatabase = async (request, response) => {
         const currentWeatherData = await fetchCurrentWeatherData(lat, lon);
         const weeklyWeatherData = await fetchWeeklyWeatherData(lat, lon);
         await processWeatherUpdateData(weeklyWeatherData, currentWeatherData, town.id);
-        let weatherData = await getMyWeatherFromDatabase(town);
+        let weatherData = await getWeatherFromDatabase (town);
         return response.json(weatherData);
 
     } catch (error) {
@@ -136,7 +119,7 @@ async function getTownByCoordinates(lat, lon) {
 }
 
 //helper function
-async function getMyWeatherFromDatabase(town) {
+async function getWeatherFromDatabase(town) {
 
     let weatherData = await TownWeatherInfo.findAll({
         where: {
@@ -145,14 +128,16 @@ async function getMyWeatherFromDatabase(town) {
     });
 
     const townName = town.Name;
+    const lat = town.Lat;
+    const lon = town.Lon;
 
-    return { weatherData, townName };
+    return { weatherData, townName, lat, lon };
 }
 
 //helper function
 const fetchCurrentWeatherData = async (lat, lon) => {
     
-    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${weatherKey}`;
 
     try {
         const response = await fetch(url, {
@@ -175,7 +160,7 @@ const fetchCurrentWeatherData = async (lat, lon) => {
 
 //helper function
 const fetchWeeklyWeatherData = async (lat, lon) => {
-    const url = `http://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+    const url = `http://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${weatherKey}`;
 
     try {
         const response = await fetch(url, {
@@ -261,31 +246,30 @@ const processWeatherUpdateData = async (weeklyWeatherData, currentWeatherData, t
     {
         where: {
             TownId: townId,
-            DayName: dayName
-        }
+        },
+        limit: 1
     }
 );
     weeklyWeatherData = getWeeklyObjectsByHighestAndLowestTemp(weeklyWeatherData);
+    let townWeatherInfo = await TownWeatherInfo.findOne({where: { TownId: townId }});
+    let id = townWeatherInfo.id;
     for (const object of weeklyWeatherData) {
         const { dt_txt, main, weather } = object;
         currentWeatherDate = new Date(dt_txt);
         dayName = currentWeatherDate.toLocaleDateString('bg-BG', { weekday: 'long' });
-
+        const capitalizedDayName = capitalizeFirstLetter(dayName);
+        id++;
         await TownWeatherInfo.update({
             Temp: Math.round(main.temp),
             MinTemp: Math.round(object.lowest_temp_min),
             WeatherIcon: weather[0].icon,
-            DayName: capitalizeFirstLetter(dayName),
+            DayName: capitalizedDayName,
             Humidity: main.humidity
         },
         {
             where: {
+                id,
                 TownId: townId,
-                // DayName: dayName,
-                // Temp: Math.round(main.temp),
-                // MinTemp: Math.round(object.lowest_temp_min),
-                // WeatherIcon: weather[0].icon,
-                // Humidity: main.humidity
             }
         }
         );
@@ -330,9 +314,20 @@ function getWeeklyObjectsByHighestAndLowestTemp(weeklyWeatherData) {
     return highestTempByDate;
 }
 
+//helper function
+const getIpinfoData = async () => {
+    try {
+        const response = await fetch('http://localhost:8080/ip-info');
+        const data = await response.json();
+        return data
+    } catch (error) {
+        console.error('Error fetching IP data:', error);
+    }
+};
+
 module.exports = {
     postTownName,
-    postCoordinates,
+    getWeatherData,
     updateWeatherInDatabase
 }
  
