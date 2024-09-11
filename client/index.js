@@ -9,6 +9,9 @@ document.querySelector(".find-location").addEventListener('submit', async (event
         // Get the value of the input field
         const townName = element.value.trim();
 
+        const errorMessageElement = document.querySelector('.error-message');
+    errorMessageElement.style.display = 'none';
+
         try {
             let response = await fetch('http://localhost:8080/postTownName', {
                 method: 'POST',
@@ -18,13 +21,21 @@ document.querySelector(".find-location").addEventListener('submit', async (event
                 body: JSON.stringify({ townName })                
             });
 
+            if (!response.ok) {
+                const errorData = await response.json();
+                errorMessageElement.textContent = `${errorData.error}`;
+                errorMessageElement.style.display = 'block'; // Show the error message
+                element.value = '';
+                return;            
+            }
+
             let currentData = await response.json();
             let updatedData = await updateWeatherData(currentData);
+            element.value = '';
             await renderData(currentData, updatedData)
 
         } catch (error) {
             console.error('There has been a problem with your fetch operation:', error);
-            return null; 
         }
 });
 

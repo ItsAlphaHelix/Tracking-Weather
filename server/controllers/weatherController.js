@@ -57,10 +57,16 @@ const getWeatherData = async (request, re) => {
 const postTownName = async (request, re) => {
     const { townName } = request.body;
 
+    if (townName === '') {
+        return re.status(400).json({ error: 'The location you chose cannot be empty.' });
+    }
+    
     let town = await Town.findOne({ where: { name: townName } });
+    
     if (town) {
         town = await getTownByCoordinates(town.Lat, town.Lon);
     }
+    
     if (town == null) {
 
         //encodeURIComponent
@@ -79,6 +85,11 @@ const postTownName = async (request, re) => {
             }
 
             const data = await response.json();
+
+            if (!data.length) {
+                return re.status(404).json({ error: 'No location found with the provided name.' });
+            }
+
             const { name, lat, lon } = data[0];
 
             town = await Town.create({ Name: name, Lat: lat, Lon: lon });
