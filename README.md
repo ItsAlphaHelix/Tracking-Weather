@@ -13,6 +13,6 @@ Using API from [https://openweathermap.org](https://openweathermap.org)
 - Express JS(server)
 - MSSQL Server(Database)
 - Sequelize(ORM)
-- ip info(I use IP info because I want to obtain the users' coordinates to use them in making requests to the OpenWeather API. In this way, users are automatically shown the weather forecasts for their location without having to use a search function.)
+- Ip Info(I use IP info because I want to obtain the users' coordinates to use them in making requests to the OpenWeather API. In this way, users are automatically shown the weather forecasts for their location without having to use a search function.)
 
 ![Weather](https://github.com/ItsAlphaHelix/Tracking-Weather/blob/main/Weather.png?raw=true)
