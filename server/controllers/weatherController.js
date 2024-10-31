@@ -90,15 +90,15 @@ const postTownName = async (request, re) => {
                 return re.status(404).json({ error: 'No location found with the provided name.' });
             }
 
-            const { name, lat, lon } = data[0];
+            const location = data[0].local_names.bg;
+            const { lat, lon } = data[0];
 
-            town = await Town.create({ Name: name, Lat: lat, Lon: lon });
+            town = await Town.create({ Name: location, Lat: lat, Lon: lon });
             await fillDatabaseWithWeatherData(town);
             let weatherData = await getWeatherFromDatabase(town)
             return re.json(weatherData);
         } catch (error) {
             console.error('There has been a problem with your fetch operation:', error);
-            return null; // Return null or handle the error as needed
         }
     }
     else {
@@ -148,7 +148,7 @@ async function getWeatherFromDatabase(town) {
 //helper function
 const fetchCurrentWeatherData = async (lat, lon) => {
     
-    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${weatherKey}`;
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=bg&appid=${weatherKey}`;
 
     try {
         const response = await fetch(url, {

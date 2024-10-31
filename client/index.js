@@ -108,7 +108,6 @@ async function renderData(data, updatedData) {
     }).join(''); 
 
     forecastContainer.innerHTML = currentWeatherHTML + forecastHTML;
-
 }
 
 async function updateWeatherData(data) {
