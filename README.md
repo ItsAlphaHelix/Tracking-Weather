@@ -7,7 +7,7 @@ Using API from [https://openweathermap.org](https://openweathermap.org)
 
 ### Front-End
 - Vanilla JavaScript
-- HTML && CSS
+- HTML & CSS
 
 ### Back-End
 - Express JS(server)
