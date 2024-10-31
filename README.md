@@ -5,11 +5,11 @@ Using API from [https://openweathermap.org](https://openweathermap.org)
 
 ## 🛠️ **Built Using**
 
-#### Front-End
+### Front-End
 - Vanilla JavaScript
 - HTML && CSS
 
-#### Back-End
+### Back-End
 - Express JS
 - MSSQL Server
 - Sequelize
