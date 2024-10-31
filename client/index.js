@@ -83,9 +83,7 @@ async function renderData(data, updatedData) {
                     <img src="https://openweathermap.org/img/wn/${weatherData[0].WeatherIcon}@2x.png" alt="" width="140">
                 </div>
             </div>
-            <span><img src="images/icon-umberella.png" alt="">20%</span>
             <span><img src="images/icon-wind.png" alt="">${weatherData[0].WindSpeed} km/h</span>
-            <span><img src="images/icon-compass.png" alt="">East</span>
         </div>
     </div>
 `;
